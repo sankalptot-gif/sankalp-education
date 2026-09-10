@@ -3,7 +3,12 @@ package com.sankalp.education
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.ui.LoginScreen
 
@@ -47,32 +52,28 @@ fun SankalpEducationApp() {
 fun HomeScreen(
     onLogout: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Column(
-        modifier = androidx.compose.ui.Modifier
+    Column(
+        modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
 
-        androidx.compose.material3.Text(
+        Text(
             text = "Sankalp Education",
-            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium
         )
 
-        androidx.compose.foundation.layout.Spacer(
-            modifier = androidx.compose.ui.Modifier.height(16.dp)
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        androidx.compose.material3.Text(
+        Text(
             text = "Login successful"
         )
 
-        androidx.compose.foundation.layout.Spacer(
-            modifier = androidx.compose.ui.Modifier.height(24.dp)
-        )
+        Spacer(modifier = Modifier.height(24.dp))
 
-        androidx.compose.material3.Button(
+        Button(
             onClick = {
                 kotlinx.coroutines.CoroutineScope(
                     kotlinx.coroutines.Dispatchers.Main
@@ -82,7 +83,7 @@ fun HomeScreen(
                 }
             }
         ) {
-            androidx.compose.material3.Text("Logout")
+            Text("Logout")
         }
     }
 }
