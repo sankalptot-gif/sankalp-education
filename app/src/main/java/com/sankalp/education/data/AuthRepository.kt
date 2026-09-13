@@ -12,10 +12,10 @@ object AuthRepository {
         password: String
     ): Result<Unit> {
         return try {
-            supabase.auth.signInWith(io.github.jan.supabase.auth.providers.Email) {
-                this.email = email
-                this.password = password
-            }
+            supabase.auth.signInWithEmail(
+                email = email,
+                password = password
+            )
 
             Result.success(Unit)
         } catch (e: Exception) {
