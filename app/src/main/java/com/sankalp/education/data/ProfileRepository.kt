@@ -1,5 +1,6 @@
 package com.sankalp.education.data
 
+import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.Serializable
 
@@ -14,9 +15,12 @@ data class Profile(
 
 object ProfileRepository {
 
+    private val supabase
+        get() = SupabaseClientProvider.client
+
     suspend fun getProfile(userId: String): Profile? {
         return try {
-            SupabaseClientProvider.client
+            supabase
                 .from("profiles")
                 .select {
                     filter {
@@ -24,8 +28,36 @@ object ProfileRepository {
                     }
                 }
                 .decodeSingleOrNull<Profile>()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
+        }
+    }
+
+    suspend fun getCurrentUserEmail(): String? {
+        return try {
+            supabase.auth.currentUserOrNull()?.email
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    suspend fun getCurrentUserRole(): String {
+        return try {
+            val currentUser = supabase.auth.currentUserOrNull()
+                ?: return "student"
+
+            val profile = getProfile(currentUser.id)
+
+            profile?.role ?: "student"
+        } catch (_: Exception) {
+            "student"
+        }
+    }
+
+    suspend fun logout() {
+        try {
+            supabase.auth.signOut()
+        } catch (_: Exception) {
         }
     }
 }
