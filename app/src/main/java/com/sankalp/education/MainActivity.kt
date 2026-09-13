@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.data.ProfileRepository
+import com.sankalp.education.ui.CoursesScreen
 import com.sankalp.education.ui.LoginScreen
 import kotlinx.coroutines.launch
 
@@ -54,23 +55,41 @@ fun SankalpEducationApp() {
         mutableStateOf(AuthRepository.isLoggedIn())
     }
 
-    if (isLoggedIn) {
-        DashboardScreen(
-            onLogout = {
-                isLoggedIn = false
-            }
-        )
-    } else {
+    var showCourses by remember {
+        mutableStateOf(false)
+    }
+
+    if (!isLoggedIn) {
         LoginScreen(
             onLoginSuccess = {
                 isLoggedIn = true
             }
         )
+        return
     }
+
+    if (showCourses) {
+        CoursesScreen(
+            onBack = {
+                showCourses = false
+            }
+        )
+        return
+    }
+
+    DashboardScreen(
+        onOpenCourses = {
+            showCourses = true
+        },
+        onLogout = {
+            isLoggedIn = false
+        }
+    )
 }
 
 @Composable
 fun DashboardScreen(
+    onOpenCourses: () -> Unit,
     onLogout: () -> Unit
 ) {
     var userEmail by remember {
@@ -152,7 +171,7 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = onOpenCourses,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Manage Courses")
