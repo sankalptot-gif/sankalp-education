@@ -15,21 +15,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
+import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.data.ProfileRepository
+import com.sankalp.education.ui.LoginScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
-    private val profileRepository = ProfileRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,35 +41,58 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DashboardScreen(
-                        onLogout = {
-                            lifecycleScope.launch {
-                                profileRepository.logout()
-                                recreate()
-                            }
-                        }
-                    )
+                    SankalpEducationApp()
                 }
             }
         }
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
+fun SankalpEducationApp() {
+    var isLoggedIn by remember {
+        mutableStateOf(AuthRepository.isLoggedIn())
+    }
+
+    if (isLoggedIn) {
+        DashboardScreen(
+            onLogout = {
+                isLoggedIn = false
+            }
+        )
+    } else {
+        LoginScreen(
+            onLoginSuccess = {
+                isLoggedIn = true
+            }
+        )
+    }
+}
+
+@Composable
 fun DashboardScreen(
     onLogout: () -> Unit
 ) {
-    var userEmail by remember { mutableStateOf("Loading...") }
-    var userRole by remember { mutableStateOf("student") }
-
-    LaunchedEffect(Unit) {
-        userEmail = profileRepository.getCurrentUserEmail()
-            ?: "Unknown user"
-
-        userRole = profileRepository.getCurrentUserRole()
+    var userEmail by remember {
+        mutableStateOf("Loading...")
     }
 
-    val dashboardTitle = when (userRole.lowercase()) {
+    var userRole by remember {
+        mutableStateOf("student")
+    }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        userEmail = ProfileRepository.getCurrentUserEmail()
+            ?: "Unknown user"
+
+        userRole = ProfileRepository.getCurrentUserRole()
+    }
+
+    val normalizedRole = userRole.lowercase()
+
+    val dashboardTitle = when (normalizedRole) {
         "admin" -> "Admin Dashboard"
         "partner" -> "Partner Dashboard"
         else -> "Student Dashboard"
@@ -107,66 +131,77 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        if (userRole.lowercase() == "admin") {
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Manage Admissions")
+        when (normalizedRole) {
+            "admin" -> {
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Manage Admissions")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Manage Partners")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Manage Courses")
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            "partner" -> {
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("New Admission")
+                }
 
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Manage Partners")
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("My Students")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("My Commission")
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Manage Courses")
+            else -> {
+                Text(
+                    text = "Your student account is ready."
+                )
             }
-        } else if (userRole.lowercase() == "partner") {
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("New Admission")
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("My Students")
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("My Commission")
-            }
-        } else {
-            Text(
-                text = "Your account is ready."
-            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
         OutlinedButton(
-            onClick = onLogout,
+            onClick = {
+                scope.launch {
+                    ProfileRepository.logout()
+                    onLogout()
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Logout")
