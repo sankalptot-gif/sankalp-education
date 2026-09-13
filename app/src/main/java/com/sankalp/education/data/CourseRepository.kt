@@ -8,10 +8,11 @@ data class Course(
     val id: String? = null,
     val name: String,
     val code: String? = null,
-    val duration: String? = null,
-    val fees: Double? = null,
     val description: String? = null,
-    val is_active: Boolean = true
+    val duration: String? = null,
+    val fee: Double? = null,
+    val status: String? = null,
+    val created_at: String? = null
 )
 
 object CourseRepository {
@@ -23,17 +24,13 @@ object CourseRepository {
         return try {
             val courses = supabase
                 .from("courses")
-                .select {
-                    filter {
-                        eq("is_active", true)
-                    }
-                }
+                .select()
                 .decodeList<Course>()
 
             Result.success(courses)
         } catch (e: Exception) {
             Result.failure(
-                Exception(e.message ?: "Courses load nahi ho paaye.")
+                Exception("Courses load nahi ho paaye.")
             )
         }
     }
@@ -49,10 +46,10 @@ object CourseRepository {
             val course = Course(
                 name = name,
                 code = code.ifBlank { null },
-                duration = duration.ifBlank { null },
-                fees = fees,
                 description = description.ifBlank { null },
-                is_active = true
+                duration = duration.ifBlank { null },
+                fee = fees,
+                status = "active"
             )
 
             supabase
@@ -62,7 +59,7 @@ object CourseRepository {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(
-                Exception(e.message ?: "Course save nahi ho paaya.")
+                Exception("Course save nahi ho paaya. Please try again.")
             )
         }
     }
