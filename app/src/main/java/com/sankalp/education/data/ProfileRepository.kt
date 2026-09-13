@@ -1,9 +1,10 @@
 package com.sankalp.education.data
 
+import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserProfile(
+data class Profile(
     val id: String,
     val full_name: String? = null,
     val email: String? = null,
@@ -13,12 +14,16 @@ data class UserProfile(
 
 object ProfileRepository {
 
-    suspend fun getMyProfile(): UserProfile? {
+    suspend fun getProfile(userId: String): Profile? {
         return try {
-            SupabaseClient.client
+            SupabaseClientProvider.client
                 .from("profiles")
-                .select()
-                .decodeSingle<UserProfile>()
+                .select {
+                    filter {
+                        eq("id", userId)
+                    }
+                }
+                .decodeSingleOrNull<Profile>()
         } catch (e: Exception) {
             null
         }
