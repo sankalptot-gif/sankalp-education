@@ -13,12 +13,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.AuthRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -36,7 +43,6 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Sankalp Education",
             style = MaterialTheme.typography.headlineMedium
@@ -91,9 +97,7 @@ fun LoginScreen(
                     loading = true
                     errorMessage = ""
 
-                    kotlinx.coroutines.CoroutineScope(
-                        kotlinx.coroutines.Dispatchers.Main
-                    ).launch {
+                    CoroutineScope(Dispatchers.Main).launch {
                         val result = AuthRepository.login(
                             email.trim(),
                             password
@@ -101,11 +105,13 @@ fun LoginScreen(
 
                         loading = false
 
-                        result.onSuccess {
-                            onLoginSuccess(email.trim())
-                        }.onFailure {
-                            errorMessage = it.message ?: "Login failed."
-                        }
+                        result
+                            .onSuccess {
+                                onLoginSuccess(email.trim())
+                            }
+                            .onFailure {
+                                errorMessage = it.message ?: "Login failed."
+                            }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -127,7 +133,7 @@ fun LoginScreen(
 
         TextButton(
             onClick = {
-                // Forgot password will be added later
+                errorMessage = "Password reset feature jald add hogi."
             }
         ) {
             Text("Forgot Password?")
