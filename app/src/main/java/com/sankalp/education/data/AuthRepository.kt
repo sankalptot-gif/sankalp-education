@@ -1,6 +1,7 @@
 package com.sankalp.education.data
 
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
 
 object AuthRepository {
 
@@ -12,10 +13,10 @@ object AuthRepository {
         password: String
     ): Result<Unit> {
         return try {
-            supabase.auth.signInWithEmail(
-                email = email,
-                password = password
-            )
+            supabase.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
 
             Result.success(Unit)
         } catch (e: Exception) {
