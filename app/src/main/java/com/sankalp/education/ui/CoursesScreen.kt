@@ -67,7 +67,8 @@ fun CoursesScreen(
                     courses = it
                 }
                 .onFailure {
-                    errorMessage = it.message ?: "Courses load nahi ho paaye."
+                    errorMessage = it.message
+                        ?: "Courses load nahi ho paaye."
                 }
         }
     }
@@ -115,19 +116,27 @@ fun CoursesScreen(
         }
 
         if (errorMessage.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = errorMessage,
                 color = MaterialTheme.colorScheme.error
             )
         }
 
-        if (!loading && courses.isEmpty() && errorMessage.isBlank()) {
+        if (!loading &&
+            courses.isEmpty() &&
+            errorMessage.isBlank()
+        ) {
             Text(
                 text = "Abhi koi course available nahi hai."
             )
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
         LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(courses) { course ->
@@ -171,7 +180,7 @@ fun CourseItem(
             Text(text = "Duration: $it")
         }
 
-        course.fees?.let {
+        course.fee?.let {
             Text(text = "Fees: ₹$it")
         }
 
@@ -234,6 +243,7 @@ fun AddCourseDialog(
                     value = name,
                     onValueChange = {
                         name = it
+                        errorMessage = ""
                     },
                     label = {
                         Text("Course Name *")
@@ -248,6 +258,7 @@ fun AddCourseDialog(
                     value = code,
                     onValueChange = {
                         code = it
+                        errorMessage = ""
                     },
                     label = {
                         Text("Course Code")
@@ -262,6 +273,7 @@ fun AddCourseDialog(
                     value = duration,
                     onValueChange = {
                         duration = it
+                        errorMessage = ""
                     },
                     label = {
                         Text("Duration")
@@ -276,6 +288,7 @@ fun AddCourseDialog(
                     value = fees,
                     onValueChange = {
                         fees = it
+                        errorMessage = ""
                     },
                     label = {
                         Text("Fees")
@@ -290,6 +303,7 @@ fun AddCourseDialog(
                     value = description,
                     onValueChange = {
                         description = it
+                        errorMessage = ""
                     },
                     label = {
                         Text("Description")
@@ -337,8 +351,8 @@ fun AddCourseDialog(
                                 onSaved()
                             }
                             .onFailure {
-                                errorMessage =
-                                    it.message ?: "Course save nahi ho paaya."
+                                errorMessage = it.message
+                                    ?: "Course save nahi ho paaya."
                             }
                     }
                 }
