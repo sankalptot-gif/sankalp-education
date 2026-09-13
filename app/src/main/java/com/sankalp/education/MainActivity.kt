@@ -29,6 +29,7 @@ import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.data.ProfileRepository
 import com.sankalp.education.ui.CoursesScreen
 import com.sankalp.education.ui.LoginScreen
+import com.sankalp.education.ui.StudentsScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -55,41 +56,58 @@ fun SankalpEducationApp() {
         mutableStateOf(AuthRepository.isLoggedIn())
     }
 
-    var showCourses by remember {
-        mutableStateOf(false)
+    var currentScreen by remember {
+        mutableStateOf("dashboard")
     }
 
     if (!isLoggedIn) {
         LoginScreen(
             onLoginSuccess = {
                 isLoggedIn = true
+                currentScreen = "dashboard"
             }
         )
         return
     }
 
-    if (showCourses) {
-        CoursesScreen(
-            onBack = {
-                showCourses = false
-            }
-        )
-        return
-    }
-
-    DashboardScreen(
-        onOpenCourses = {
-            showCourses = true
-        },
-        onLogout = {
-            isLoggedIn = false
+    when (currentScreen) {
+        "courses" -> {
+            CoursesScreen(
+                onBack = {
+                    currentScreen = "dashboard"
+                }
+            )
         }
-    )
+
+        "students" -> {
+            StudentsScreen(
+                onBack = {
+                    currentScreen = "dashboard"
+                }
+            )
+        }
+
+        else -> {
+            DashboardScreen(
+                onOpenCourses = {
+                    currentScreen = "courses"
+                },
+                onOpenStudents = {
+                    currentScreen = "students"
+                },
+                onLogout = {
+                    isLoggedIn = false
+                    currentScreen = "dashboard"
+                }
+            )
+        }
+    }
 }
 
 @Composable
 fun DashboardScreen(
     onOpenCourses: () -> Unit,
+    onOpenStudents: () -> Unit,
     onLogout: () -> Unit
 ) {
     var userEmail by remember {
@@ -175,6 +193,15 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Manage Courses")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = onOpenStudents,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Manage Students")
                 }
             }
 
