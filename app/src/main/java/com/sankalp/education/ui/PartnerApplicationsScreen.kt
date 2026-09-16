@@ -35,42 +35,42 @@ import kotlinx.coroutines.launch
 fun PartnerApplicationsScreen(
     onBack: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+
     var applications by remember {
         mutableStateOf<List<PartnerApplication>>(emptyList())
     }
 
-    var loading by remember {
+    var isLoading by remember {
         mutableStateOf(true)
     }
 
     var errorMessage by remember {
-        mutableStateOf("")
+        mutableStateOf<String?>(null)
     }
 
     var selectedApplication by remember {
         mutableStateOf<PartnerApplication?>(null)
     }
 
-    val scope = rememberCoroutineScope()
+    var showReviewDialog by remember {
+        mutableStateOf(false)
+    }
 
     fun loadApplications() {
         scope.launch {
-            loading = true
+            isLoading = true
+            errorMessage = null
 
-            val result =
-                PartnerApplicationRepository.getApplications()
+            val result = PartnerApplicationRepository.getApplications()
 
-            result
-                .onSuccess {
-                    applications = it
-                    errorMessage = ""
-                }
-                .onFailure {
-                    errorMessage = it.message
-                        ?: "Applications load nahi ho paayi."
-                }
+            result.onSuccess {
+                applications = it
+            }.onFailure {
+                errorMessage = it.message
+            }
 
-            loading = false
+            isLoading = false
         }
     }
 
@@ -81,87 +81,116 @@ fun PartnerApplicationsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            TextButton(onClick = onBack) {
+                Text("Back")
+            }
+
             Text(
                 text = "Partner Applications",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.titleLarge
             )
 
-            OutlinedButton(
-                onClick = onBack
+            TextButton(
+                onClick = {
+                    loadApplications()
+                }
             ) {
-                Text("Back")
+                Text("Refresh")
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        if (loading) {
-            CircularProgressIndicator()
-        } else if (errorMessage.isNotBlank()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error
-            )
-        } else if (applications.isEmpty()) {
-            Text("Abhi koi partner application available nahi hai.")
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
-                items(
-                    items = applications,
-                    key = {
-                        it.id
-                            ?: it.application_number
-                            ?: it.full_name.orEmpty()
-                    }
-                ) { application ->
+        when {
+            isLoading -> {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Applications load ho rahi hain...")
+                }
+            }
 
-                    PartnerApplicationCard(
-                        application = application,
-                        onReview = {
-                            selectedApplication = application
-                        },
-                        onDelete = {
-                            val applicationId =
-                                application.id
-                                    ?: return@PartnerApplicationCard
-
-                            scope.launch {
-                                val result =
-                                    PartnerApplicationRepository
-                                        .deleteApplication(applicationId)
-
-                                result
-                                    .onSuccess {
-                                        loadApplications()
-                                    }
-                                    .onFailure {
-                                        errorMessage = it.message
-                                            ?: "Application delete nahi ho paayi."
-                                    }
-                            }
-                        }
+            errorMessage != null -> {
+                Column {
+                    Text(
+                        text = errorMessage ?: "Unknown error",
+                        color = MaterialTheme.colorScheme.error
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            loadApplications()
+                        }
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
+
+            applications.isEmpty() -> {
+                Text("Abhi koi partner application nahi hai.")
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        items = applications,
+                        key = { application ->
+                            application.id ?: application.application_number
+                            ?: application.hashCode().toString()
+                        }
+                    ) { application ->
+                        PartnerApplicationCard(
+                            application = application,
+                            onReview = {
+                                selectedApplication = application
+                                showReviewDialog = true
+                            },
+                            onDelete = {
+                                application.id?.let { applicationId ->
+                                    scope.launch {
+                                        val result =
+                                            PartnerApplicationRepository
+                                                .deleteApplication(applicationId)
+
+                                        result.onSuccess {
+                                            loadApplications()
+                                        }.onFailure {
+                                            errorMessage = it.message
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 
-    selectedApplication?.let { application ->
+    if (showReviewDialog && selectedApplication != null) {
         ReviewApplicationDialog(
-            application = application,
+            application = selectedApplication!!,
             onDismiss = {
+                showReviewDialog = false
                 selectedApplication = null
             },
-            onUpdated = {
+            onSaved = {
+                showReviewDialog = false
                 selectedApplication = null
                 loadApplications()
             }
@@ -176,11 +205,13 @@ private fun PartnerApplicationCard(
     onDelete: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
     ) {
         Text(
-            text = application.full_name ?: "Unnamed Applicant",
-            style = MaterialTheme.typography.titleLarge
+            text = application.full_name ?: "Name unavailable",
+            style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -198,11 +229,51 @@ private fun PartnerApplicationCard(
         )
 
         Text(
-            text = "Email: ${application.email ?: "-"}"
+            text = "Mother Name: ${
+                application.mother_name ?: "-"
+            }"
         )
 
         Text(
-            text = "Phone: ${application.phone ?: "-"}"
+            text = "Gender: ${
+                application.gender ?: "-"
+            }"
+        )
+
+        Text(
+            text = "Date of Birth: ${
+                application.date_of_birth ?: "-"
+            }"
+        )
+
+        Text(
+            text = "Email: ${
+                application.email ?: "-"
+            }"
+        )
+
+        Text(
+            text = "Phone: ${
+                application.phone ?: "-"
+            }"
+        )
+
+        Text(
+            text = "Address: ${
+                application.address ?: "-"
+            }"
+        )
+
+        Text(
+            text = "Aadhaar: ${
+                application.aadhaar_number ?: "-"
+            }"
+        )
+
+        Text(
+            text = "PAN: ${
+                application.pan_number ?: "-"
+            }"
         )
 
         Text(
@@ -212,10 +283,13 @@ private fun PartnerApplicationCard(
         )
 
         Text(
-            text = "Status: ${application.status ?: "pending"}"
+            text = "Status: ${
+                application.status ?: "pending"
+            }",
+            style = MaterialTheme.typography.titleSmall
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -225,7 +299,7 @@ private fun PartnerApplicationCard(
                 onClick = onReview,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("View / Review")
+                Text("Review")
             }
 
             OutlinedButton(
@@ -242,242 +316,181 @@ private fun PartnerApplicationCard(
 private fun ReviewApplicationDialog(
     application: PartnerApplication,
     onDismiss: () -> Unit,
-    onUpdated: () -> Unit
+    onSaved: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+
+    var selectedStatus by remember {
+        mutableStateOf(application.status ?: "pending")
+    }
+
     var adminNotes by remember {
-        mutableStateOf(application.admin_notes.orEmpty())
+        mutableStateOf(application.admin_notes ?: "")
     }
 
     var rejectionReason by remember {
-        mutableStateOf(application.rejection_reason.orEmpty())
+        mutableStateOf(application.rejection_reason ?: "")
     }
 
-    var saving by remember {
+    var isSaving by remember {
         mutableStateOf(false)
     }
 
     var errorMessage by remember {
-        mutableStateOf("")
+        mutableStateOf<String?>(null)
     }
 
-    val scope = rememberCoroutineScope()
-
     AlertDialog(
-        onDismissRequest = {
-            if (!saving) {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         title = {
-            Text("Application Details")
+            Text("Review Application")
         },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Application No: ${
-                    application.application_number ?: "-"
-                }")
+            Column {
+                Text(
+                    text = application.full_name ?: "Applicant",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
-                Text("Full Name: ${
-                    application.full_name ?: "-"
-                }")
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Text("Father Name: ${
-                    application.father_name ?: "-"
-                }")
+                Text("Select Status")
 
-                Text("Mother Name: ${
-                    application.mother_name ?: "-"
-                }")
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Text("Gender: ${
-                    application.gender ?: "-"
-                }")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    StatusButton(
+                        text = "Pending",
+                        selected = selectedStatus == "pending",
+                        onClick = {
+                            selectedStatus = "pending"
+                        }
+                    )
 
-                Text("Date of Birth: ${
-                    application.date_of_birth ?: "-"
-                }")
+                    StatusButton(
+                        text = "Approved",
+                        selected = selectedStatus == "approved",
+                        onClick = {
+                            selectedStatus = "approved"
+                        }
+                    )
 
-                Text("Email: ${
-                    application.email ?: "-"
-                }")
+                    StatusButton(
+                        text = "Rejected",
+                        selected = selectedStatus == "rejected",
+                        onClick = {
+                            selectedStatus = "rejected"
+                        }
+                    )
+                }
 
-                Text("Phone: ${
-                    application.phone ?: "-"
-                }")
-
-                Text("Address: ${
-                    application.address ?: "-"
-                }")
-
-                Text("Aadhaar: ${
-                    application.aadhaar_number ?: "-"
-                }")
-
-                Text("PAN: ${
-                    application.pan_number ?: "-"
-                }")
-
-                Text("Education: ${
-                    application.education_details ?: "-"
-                }")
-
-                Text("Profile Photo: ${
-                    application.profile_photo_path ?: "-"
-                }")
-
-                Text("Aadhaar Document: ${
-                    application.aadhaar_document_path ?: "-"
-                }")
-
-                Text("PAN Document: ${
-                    application.pan_document_path ?: "-"
-                }")
-
-                Text("Education Document: ${
-                    application.education_document_path ?: "-"
-                }")
-
-                Text("Other Document: ${
-                    application.other_document_path ?: "-"
-                }")
-
-                Text("Current Status: ${
-                    application.status ?: "pending"
-                }")
+                Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedTextField(
                     value = adminNotes,
                     onValueChange = {
                         adminNotes = it
                     },
+                    modifier = Modifier.fillMaxWidth(),
                     label = {
                         Text("Admin Notes")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    minLines = 3
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = rejectionReason,
                     onValueChange = {
                         rejectionReason = it
                     },
+                    modifier = Modifier.fillMaxWidth(),
                     label = {
                         Text("Rejection Reason")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    minLines = 2
                 )
 
-                if (errorMessage.isNotBlank()) {
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
-                        text = errorMessage,
+                        text = errorMessage ?: "",
                         color = MaterialTheme.colorScheme.error
                     )
                 }
             }
         },
         confirmButton = {
-            Column {
-                TextButton(
-                    enabled = !saving,
-                    onClick = {
-                        val applicationId =
-                            application.id ?: run {
-                                errorMessage =
-                                    "Application ID nahi mila."
-                                return@TextButton
-                            }
+            Button(
+                onClick = {
+                    val applicationId = application.id ?: return@Button
 
-                        saving = true
-                        errorMessage = ""
+                    scope.launch {
+                        isSaving = true
+                        errorMessage = null
 
-                        scope.launch {
-                            val result =
-                                PartnerApplicationRepository
-                                    .updateApplicationStatus(
-                                        id = applicationId,
-                                        status = "approved",
-                                        adminNotes = adminNotes
-                                            .trim()
-                                            .ifBlank { null },
-                                        rejectionReason = null,
-                                        reviewedBy = null
-                                    )
+                        val result =
+                            PartnerApplicationRepository.updateApplicationStatus(
+                                id = applicationId,
+                                status = selectedStatus,
+                                adminNotes = adminNotes.ifBlank { null },
+                                rejectionReason = rejectionReason.ifBlank { null },
+                                reviewedBy = null
+                            )
 
-                            saving = false
-
-                            result
-                                .onSuccess {
-                                    onUpdated()
-                                }
-                                .onFailure {
-                                    errorMessage = it.message
-                                        ?: "Approve nahi ho paaya."
-                                }
+                        result.onSuccess {
+                            onSaved()
+                        }.onFailure {
+                            errorMessage = it.message
                         }
+
+                        isSaving = false
                     }
-                ) {
-                    Text("Approve")
-                }
-
-                TextButton(
-                    enabled = !saving,
-                    onClick = {
-                        val applicationId =
-                            application.id ?: run {
-                                errorMessage =
-                                    "Application ID nahi mila."
-                                return@TextButton
-                            }
-
-                        if (rejectionReason.isBlank()) {
-                            errorMessage =
-                                "Reject karne ke liye reason likhiye."
-                            return@TextButton
-                        }
-
-                        saving = true
-                        errorMessage = ""
-
-                        scope.launch {
-                            val result =
-                                PartnerApplicationRepository
-                                    .updateApplicationStatus(
-                                        id = applicationId,
-                                        status = "rejected",
-                                        adminNotes = adminNotes
-                                            .trim()
-                                            .ifBlank { null },
-                                        rejectionReason = rejectionReason
-                                            .trim(),
-                                        reviewedBy = null
-                                    )
-
-                            saving = false
-
-                            result
-                                .onSuccess {
-                                    onUpdated()
-                                }
-                                .onFailure {
-                                    errorMessage = it.message
-                                        ?: "Reject nahi ho paaya."
-                                }
-                        }
-                    }
-                ) {
-                    Text("Reject")
+                },
+                enabled = !isSaving
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Save")
                 }
             }
         },
         dismissButton = {
             TextButton(
-                enabled = !saving,
-                onClick = onDismiss
+                onClick = onDismiss,
+                enabled = !isSaving
             ) {
-                Text("Close")
+                Text("Cancel")
             }
         }
     )
+}
+
+@Composable
+private fun StatusButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    if (selected) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(text)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(text)
+        }
+    }
 }
