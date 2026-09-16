@@ -30,6 +30,7 @@ import com.sankalp.education.data.ProfileRepository
 import com.sankalp.education.ui.AdmissionsScreen
 import com.sankalp.education.ui.CoursesScreen
 import com.sankalp.education.ui.LoginScreen
+import com.sankalp.education.ui.PartnersScreen
 import com.sankalp.education.ui.StudentsScreen
 import kotlinx.coroutines.launch
 
@@ -122,6 +123,14 @@ fun DashboardScreen(
             )
         }
 
+        "partners" -> {
+            PartnersScreen(
+                onBack = {
+                    currentScreen = "dashboard"
+                }
+            )
+        }
+
         else -> {
             DashboardHome(
                 userEmail = userEmail,
@@ -134,6 +143,9 @@ fun DashboardScreen(
                 },
                 onOpenAdmissions = {
                     currentScreen = "admissions"
+                },
+                onOpenPartners = {
+                    currentScreen = "partners"
                 },
                 onLogout = {
                     scope.launch {
@@ -153,6 +165,7 @@ fun DashboardHome(
     onOpenCourses: () -> Unit,
     onOpenStudents: () -> Unit,
     onOpenAdmissions: () -> Unit,
+    onOpenPartners: () -> Unit,
     onLogout: () -> Unit
 ) {
     val dashboardTitle = when (userRole.lowercase()) {
@@ -205,9 +218,7 @@ fun DashboardHome(
             Spacer(modifier = Modifier.height(10.dp))
 
             Button(
-                onClick = {
-                    // Partners screen baad mein connect hoga
-                },
+                onClick = onOpenPartners,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Manage Partners")
