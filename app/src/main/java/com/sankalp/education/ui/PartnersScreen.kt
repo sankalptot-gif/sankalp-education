@@ -13,8 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.Partner
+import com.sankalp.education.data.PartnerInsert
 import com.sankalp.education.data.PartnerRepository
 import kotlinx.coroutines.launch
 
@@ -40,12 +41,12 @@ fun PartnersScreen(
         mutableStateOf<List<Partner>>(emptyList())
     }
 
-    var isLoading by remember {
+    var loading by remember {
         mutableStateOf(true)
     }
 
     var errorMessage by remember {
-        mutableStateOf<String?>(null)
+        mutableStateOf("")
     }
 
     var showAddDialog by remember {
@@ -56,18 +57,21 @@ fun PartnersScreen(
 
     fun loadPartners() {
         scope.launch {
-            isLoading = true
-            errorMessage = null
+            loading = true
+            errorMessage = ""
 
             val result = PartnerRepository.getPartners()
 
-            result.onSuccess {
-                partners = it
-            }.onFailure {
-                errorMessage = it.message ?: "Partners load nahi ho paaye"
-            }
+            result
+                .onSuccess {
+                    partners = it
+                }
+                .onFailure {
+                    errorMessage = it.message
+                        ?: "Partners load nahi ho paaye."
+                }
 
-            isLoading = false
+            loading = false
         }
     }
 
@@ -78,77 +82,104 @@ fun PartnersScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(20.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            TextButton(onClick = onBack) {
+            Text(
+                text = "Partners",
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            OutlinedButton(
+                onClick = onBack
+            ) {
                 Text("Back")
             }
-
-            Button(onClick = { showAddDialog = true }) {
-                Text("Add Partner")
-            }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        Text(
-            text = "Partners",
+        Button(
+            onClick = {
+                showAddDialog = true
+            },
             modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        errorMessage?.let {
-            Text(text = it)
-            Spacer(modifier = Modifier.height(8.dp))
+        ) {
+            Text("Add New Partner")
         }
 
-        if (isLoading) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (loading) {
             CircularProgressIndicator()
+        } else if (errorMessage.isNotBlank()) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error
+            )
         } else if (partners.isEmpty()) {
-            Text("Abhi koi partner nahi hai.")
+            Text("Abhi koi partner available nahi hai.")
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(500.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .height(400.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
                     items = partners,
-                    key = { partner -> partner.id ?: partner.hashCode() }
+                    key = {
+                        it.id
+                            ?: it.partner_id
+                            ?: it.full_name.orEmpty()
+                    }
                 ) { partner ->
+
                     PartnerCard(
                         partner = partner,
+
                         onApprove = {
-                            partner.id?.let { id ->
-                                scope.launch {
-                                    PartnerRepository
-                                        .updatePartnerStatus(id, "approved")
-                                        .onSuccess { loadPartners() }
-                                }
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
+
+                            scope.launch {
+                                PartnerRepository
+                                    .updatePartnerStatus(
+                                        id = partnerId,
+                                        status = "approved"
+                                    )
+
+                                loadPartners()
                             }
                         },
+
                         onReject = {
-                            partner.id?.let { id ->
-                                scope.launch {
-                                    PartnerRepository
-                                        .updatePartnerStatus(id, "rejected")
-                                        .onSuccess { loadPartners() }
-                                }
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
+
+                            scope.launch {
+                                PartnerRepository
+                                    .updatePartnerStatus(
+                                        id = partnerId,
+                                        status = "rejected"
+                                    )
+
+                                loadPartners()
                             }
                         },
+
                         onDelete = {
-                            partner.id?.let { id ->
-                                scope.launch {
-                                    PartnerRepository
-                                        .deletePartner(id)
-                                        .onSuccess { loadPartners() }
-                                }
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
+
+                            scope.launch {
+                                PartnerRepository
+                                    .deletePartner(partnerId)
+
+                                loadPartners()
                             }
                         }
                     )
@@ -177,48 +208,64 @@ private fun PartnerCard(
     onReject: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp)
+        Text(
+            text = partner.full_name ?: "Unnamed Partner",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "Partner ID: ${partner.partner_id ?: "-"}"
+        )
+
+        Text(
+            text = "Email: ${partner.email ?: "-"}"
+        )
+
+        Text(
+            text = "Phone: ${partner.phone ?: "-"}"
+        )
+
+        Text(
+            text = "Status: ${partner.status ?: "pending"}"
+        )
+
+        Text(
+            text = "Commission: ${partner.commission_percent ?: 0.0}%"
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Name: ${partner.name ?: "-"}")
-            Text("Email: ${partner.email ?: "-"}")
-            Text("Phone: ${partner.phone ?: "-"}")
-            Text("Business: ${partner.business_name ?: "-"}")
-            Text("City: ${partner.city ?: "-"}")
-            Text("Status: ${partner.status ?: "-"}")
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Button(
+                onClick = onApprove,
+                modifier = Modifier.width(140.dp)
             ) {
-                Button(
-                    onClick = onApprove,
-                    modifier = Modifier.width(110.dp)
-                ) {
-                    Text("Approve")
-                }
-
-                OutlinedButton(
-                    onClick = onReject,
-                    modifier = Modifier.width(110.dp)
-                ) {
-                    Text("Reject")
-                }
+                Text("Approve")
             }
-
-            Spacer(modifier = Modifier.height(6.dp))
 
             OutlinedButton(
-                onClick = onDelete,
-                modifier = Modifier.fillMaxWidth()
+                onClick = onReject,
+                modifier = Modifier.width(140.dp)
             ) {
-                Text("Delete")
+                Text("Reject")
             }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedButton(
+            onClick = onDelete,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Delete")
         }
     }
 }
@@ -228,27 +275,81 @@ private fun AddPartnerDialog(
     onDismiss: () -> Unit,
     onSaved: () -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var partnerId by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf("") }
+    var fatherName by remember { mutableStateOf("") }
+    var motherName by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }
+    var dateOfBirth by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var businessName by remember { mutableStateOf("") }
-    var city by remember { mutableStateOf("") }
-    var isSaving by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var address by remember { mutableStateOf("") }
+    var aadhaarNumber by remember { mutableStateOf("") }
+    var panNumber by remember { mutableStateOf("") }
+    var educationDetails by remember { mutableStateOf("") }
+
+    var isSaving by remember {
+        mutableStateOf(false)
+    }
+
+    var errorMessage by remember {
+        mutableStateOf("")
+    }
 
     val scope = rememberCoroutineScope()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Add Partner")
+        onDismissRequest = {
+            if (!isSaving) {
+                onDismiss()
+            }
         },
+
+        title = {
+            Text("Add New Partner")
+        },
+
         text = {
             Column {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
+                    value = partnerId,
+                    onValueChange = { partnerId = it },
+                    label = { Text("Partner ID") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    label = { Text("Full Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = fatherName,
+                    onValueChange = { fatherName = it },
+                    label = { Text("Father Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = motherName,
+                    onValueChange = { motherName = it },
+                    label = { Text("Mother Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = gender,
+                    onValueChange = { gender = it },
+                    label = { Text("Gender") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = dateOfBirth,
+                    onValueChange = { dateOfBirth = it },
+                    label = { Text("Date of Birth") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -267,53 +368,96 @@ private fun AddPartnerDialog(
                 )
 
                 OutlinedTextField(
-                    value = businessName,
-                    onValueChange = { businessName = it },
-                    label = { Text("Business Name") },
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("Address") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
-                    value = city,
-                    onValueChange = { city = it },
-                    label = { Text("City") },
+                    value = aadhaarNumber,
+                    onValueChange = { aadhaarNumber = it },
+                    label = { Text("Aadhaar Number") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                errorMessage?.let {
-                    Text(it)
+                OutlinedTextField(
+                    value = panNumber,
+                    onValueChange = { panNumber = it },
+                    label = { Text("PAN Number") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = educationDetails,
+                    onValueChange = { educationDetails = it },
+                    label = { Text("Education Details") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (errorMessage.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         },
+
         confirmButton = {
             Button(
+                enabled = !isSaving,
                 onClick = {
-                    if (name.isBlank()) {
-                        errorMessage = "Name zaroori hai"
+                    if (partnerId.isBlank()) {
+                        errorMessage = "Partner ID zaroori hai"
+                        return@Button
+                    }
+
+                    if (fullName.isBlank()) {
+                        errorMessage = "Full Name zaroori hai"
                         return@Button
                     }
 
                     scope.launch {
                         isSaving = true
-                        errorMessage = null
+                        errorMessage = ""
 
-                        PartnerRepository.addPartner(
-                            name = name,
+                        val partner = PartnerInsert(
+                            partner_id = partnerId.trim(),
+                            full_name = fullName.trim(),
+                            father_name = fatherName.ifBlank { null },
+                            mother_name = motherName.ifBlank { null },
+                            gender = gender.ifBlank { null },
+                            date_of_birth = dateOfBirth.ifBlank { null },
                             email = email.ifBlank { null },
                             phone = phone.ifBlank { null },
-                            businessName = businessName.ifBlank { null },
-                            city = city.ifBlank { null }
-                        ).onSuccess {
-                            onSaved()
-                        }.onFailure {
-                            errorMessage =
-                                it.message ?: "Partner save nahi ho paaya"
-                        }
+                            address = address.ifBlank { null },
+                            aadhaar_number =
+                                aadhaarNumber.ifBlank { null },
+                            pan_number =
+                                panNumber.ifBlank { null },
+                            education_details =
+                                educationDetails.ifBlank { null },
+                            status = "pending",
+                            commission_percent = 0.0
+                        )
+
+                        PartnerRepository
+                            .addPartner(partner)
+                            .onSuccess {
+                                onSaved()
+                            }
+                            .onFailure {
+                                errorMessage =
+                                    it.message
+                                        ?: "Partner save nahi ho paaya."
+                            }
 
                         isSaving = false
                     }
-                },
-                enabled = !isSaving
+                }
             ) {
                 if (isSaving) {
                     CircularProgressIndicator()
@@ -322,8 +466,12 @@ private fun AddPartnerDialog(
                 }
             }
         },
+
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                enabled = !isSaving,
+                onClick = onDismiss
+            ) {
                 Text("Cancel")
             }
         }
