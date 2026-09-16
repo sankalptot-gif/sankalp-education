@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -64,11 +65,14 @@ fun PartnerApplicationsScreen(
 
             val result = PartnerApplicationRepository.getApplications()
 
-            result.onSuccess {
-                applications = it
-            }.onFailure {
-                errorMessage = it.message
-            }
+            result
+                .onSuccess {
+                    applications = it
+                }
+                .onFailure {
+                    errorMessage = it.message
+                        ?: "Partner applications load nahi ho paayi."
+                }
 
             isLoading = false
         }
@@ -110,11 +114,12 @@ fun PartnerApplicationsScreen(
         when {
             isLoading -> {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     CircularProgressIndicator()
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     Text("Applications load ho rahi hain...")
                 }
             }
@@ -122,7 +127,8 @@ fun PartnerApplicationsScreen(
             errorMessage != null -> {
                 Column {
                     Text(
-                        text = errorMessage ?: "Unknown error",
+                        text = errorMessage
+                            ?: "Unknown error",
                         color = MaterialTheme.colorScheme.error
                     )
 
@@ -150,8 +156,9 @@ fun PartnerApplicationsScreen(
                     items(
                         items = applications,
                         key = { application ->
-                            application.id ?: application.application_number
-                            ?: application.hashCode().toString()
+                            application.id
+                                ?: application.application_number
+                                ?: application.hashCode().toString()
                         }
                     ) { application ->
                         PartnerApplicationCard(
@@ -161,18 +168,22 @@ fun PartnerApplicationsScreen(
                                 showReviewDialog = true
                             },
                             onDelete = {
-                                application.id?.let { applicationId ->
-                                    scope.launch {
-                                        val result =
-                                            PartnerApplicationRepository
-                                                .deleteApplication(applicationId)
+                                val applicationId = application.id
+                                    ?: return@PartnerApplicationCard
 
-                                        result.onSuccess {
+                                scope.launch {
+                                    val result =
+                                        PartnerApplicationRepository
+                                            .deleteApplication(applicationId)
+
+                                    result
+                                        .onSuccess {
                                             loadApplications()
-                                        }.onFailure {
-                                            errorMessage = it.message
                                         }
-                                    }
+                                        .onFailure {
+                                            errorMessage = it.message
+                                                ?: "Application delete nahi ho paayi."
+                                        }
                                 }
                             }
                         )
@@ -210,7 +221,8 @@ private fun PartnerApplicationCard(
             .padding(12.dp)
     ) {
         Text(
-            text = application.full_name ?: "Name unavailable",
+            text = application.full_name
+                ?: "Name unavailable",
             style = MaterialTheme.typography.titleMedium
         )
 
@@ -297,14 +309,14 @@ private fun PartnerApplicationCard(
         ) {
             Button(
                 onClick = onReview,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(150.dp)
             ) {
                 Text("Review")
             }
 
             OutlinedButton(
                 onClick = onDelete,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(110.dp)
             ) {
                 Text("Delete")
             }
@@ -341,20 +353,25 @@ private fun ReviewApplicationDialog(
     }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (!isSaving) {
+                onDismiss()
+            }
+        },
         title = {
             Text("Review Application")
         },
         text = {
             Column {
                 Text(
-                    text = application.full_name ?: "Applicant",
+                    text = application.full_name
+                        ?: "Applicant",
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text("Select Status")
+                Text("Status")
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -362,29 +379,65 @@ private fun ReviewApplicationDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    StatusButton(
-                        text = "Pending",
-                        selected = selectedStatus == "pending",
-                        onClick = {
-                            selectedStatus = "pending"
+                    if (selectedStatus == "pending") {
+                        Button(
+                            onClick = {
+                                selectedStatus = "pending"
+                            },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            Text("Pending")
                         }
-                    )
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                selectedStatus = "pending"
+                            },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            Text("Pending")
+                        }
+                    }
 
-                    StatusButton(
-                        text = "Approved",
-                        selected = selectedStatus == "approved",
-                        onClick = {
-                            selectedStatus = "approved"
+                    if (selectedStatus == "approved") {
+                        Button(
+                            onClick = {
+                                selectedStatus = "approved"
+                            },
+                            modifier = Modifier.width(105.dp)
+                        ) {
+                            Text("Approved")
                         }
-                    )
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                selectedStatus = "approved"
+                            },
+                            modifier = Modifier.width(105.dp)
+                        ) {
+                            Text("Approved")
+                        }
+                    }
 
-                    StatusButton(
-                        text = "Rejected",
-                        selected = selectedStatus == "rejected",
-                        onClick = {
-                            selectedStatus = "rejected"
+                    if (selectedStatus == "rejected") {
+                        Button(
+                            onClick = {
+                                selectedStatus = "rejected"
+                            },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            Text("Rejected")
                         }
-                    )
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                selectedStatus = "rejected"
+                            },
+                            modifier = Modifier.width(100.dp)
+                        ) {
+                            Text("Rejected")
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -428,26 +481,36 @@ private fun ReviewApplicationDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val applicationId = application.id ?: return@Button
+                    val applicationId = application.id
+                        ?: run {
+                            errorMessage = "Application ID nahi mila."
+                            return@Button
+                        }
 
                     scope.launch {
                         isSaving = true
                         errorMessage = null
 
                         val result =
-                            PartnerApplicationRepository.updateApplicationStatus(
-                                id = applicationId,
-                                status = selectedStatus,
-                                adminNotes = adminNotes.ifBlank { null },
-                                rejectionReason = rejectionReason.ifBlank { null },
-                                reviewedBy = null
-                            )
+                            PartnerApplicationRepository
+                                .updateApplicationStatus(
+                                    id = applicationId,
+                                    status = selectedStatus,
+                                    adminNotes = adminNotes
+                                        .ifBlank { null },
+                                    rejectionReason = rejectionReason
+                                        .ifBlank { null },
+                                    reviewedBy = null
+                                )
 
-                        result.onSuccess {
-                            onSaved()
-                        }.onFailure {
-                            errorMessage = it.message
-                        }
+                        result
+                            .onSuccess {
+                                onSaved()
+                            }
+                            .onFailure {
+                                errorMessage = it.message
+                                    ?: "Application update nahi ho paaya."
+                            }
 
                         isSaving = false
                     }
@@ -470,27 +533,4 @@ private fun ReviewApplicationDialog(
             }
         }
     )
-}
-
-@Composable
-private fun StatusButton(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    if (selected) {
-        Button(
-            onClick = onClick,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(text)
-        }
-    } else {
-        OutlinedButton(
-            onClick = onClick,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(text)
-        }
-    }
 }
