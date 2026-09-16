@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -56,13 +57,13 @@ fun AdminAdmissionsScreen(
     fun loadAdmissions() {
         scope.launch {
             loading = true
+            errorMessage = ""
 
             val result = AdmissionRepository.getAdmissions()
 
             result
                 .onSuccess {
                     admissions = it
-                    errorMessage = ""
                 }
                 .onFailure {
                     errorMessage = it.message
@@ -100,55 +101,74 @@ fun AdminAdmissionsScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        if (loading) {
-            CircularProgressIndicator()
-        } else if (errorMessage.isNotBlank()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error
-            )
-        } else if (admissions.isEmpty()) {
-            Text("Abhi koi admission available nahi hai.")
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
-            ) {
-                items(
-                    items = admissions,
-                    key = {
-                        it.id
-                            ?: it.admission_number
-                            ?: it.student_name.orEmpty()
-                    }
-                ) { admission ->
+        when {
+            loading -> {
+                CircularProgressIndicator()
+            }
 
-                    AdmissionCard(
-                        admission = admission,
-                        onView = {
-                            selectedAdmission = admission
-                        },
-                        onDelete = {
-                            val admissionId =
-                                admission.id
+            errorMessage.isNotBlank() -> {
+                Column {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            loadAdmissions()
+                        }
+                    ) {
+                        Text("Retry")
+                    }
+                }
+            }
+
+            admissions.isEmpty() -> {
+                Text("Abhi koi admission available nahi hai.")
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    items(
+                        items = admissions,
+                        key = { admission ->
+                            admission.id
+                                ?: admission.admission_number
+                                ?: admission.student_name.orEmpty()
+                        }
+                    ) { admission ->
+                        AdmissionCard(
+                            admission = admission,
+                            onView = {
+                                selectedAdmission = admission
+                            },
+                            onDelete = {
+                                val admissionId = admission.id
                                     ?: return@AdmissionCard
 
-                            scope.launch {
-                                val result =
-                                    AdmissionRepository
-                                        .deleteAdmission(admissionId)
+                                scope.launch {
+                                    val result =
+                                        AdmissionRepository.deleteAdmission(
+                                            admissionId
+                                        )
 
-                                result
-                                    .onSuccess {
-                                        loadAdmissions()
-                                    }
-                                    .onFailure {
-                                        errorMessage = it.message
-                                            ?: "Admission delete nahi ho paayi."
-                                    }
+                                    result
+                                        .onSuccess {
+                                            loadAdmissions()
+                                        }
+                                        .onFailure {
+                                            errorMessage = it.message
+                                                ?: "Admission delete nahi ho paayi."
+                                        }
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -228,14 +248,14 @@ private fun AdmissionCard(
         ) {
             Button(
                 onClick = onView,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(160.dp)
             ) {
                 Text("View / Update")
             }
 
             OutlinedButton(
                 onClick = onDelete,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(110.dp)
             ) {
                 Text("Delete")
             }
@@ -351,7 +371,8 @@ private fun AdmissionDetailsDialog(
                     label = {
                         Text("Remarks")
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
                 )
 
                 if (errorMessage.isNotBlank()) {
@@ -366,8 +387,8 @@ private fun AdmissionDetailsDialog(
             TextButton(
                 enabled = !saving,
                 onClick = {
-                    val admissionId =
-                        admission.id ?: run {
+                    val admissionId = admission.id
+                        ?: run {
                             errorMessage = "Admission ID nahi mila."
                             return@TextButton
                         }
@@ -404,7 +425,7 @@ private fun AdmissionDetailsDialog(
                 }
             ) {
                 Text(
-                    if (saving) "Saving..." else "Save"
+                    text = if (saving) "Saving..." else "Save"
                 )
             }
         },
