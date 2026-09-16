@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -58,7 +57,8 @@ fun PartnerApplicationsScreen(
         scope.launch {
             loading = true
 
-            val result = PartnerApplicationRepository.getApplications()
+            val result =
+                PartnerApplicationRepository.getApplications()
 
             result
                 .onSuccess {
@@ -112,7 +112,7 @@ fun PartnerApplicationsScreen(
             Text("Abhi koi partner application available nahi hai.")
         } else {
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 items(
@@ -123,6 +123,7 @@ fun PartnerApplicationsScreen(
                             ?: it.full_name.orEmpty()
                     }
                 ) { application ->
+
                     PartnerApplicationCard(
                         application = application,
                         onReview = {
@@ -130,7 +131,8 @@ fun PartnerApplicationsScreen(
                         },
                         onDelete = {
                             val applicationId =
-                                application.id ?: return@PartnerApplicationCard
+                                application.id
+                                    ?: return@PartnerApplicationCard
 
                             scope.launch {
                                 val result =
@@ -190,6 +192,12 @@ private fun PartnerApplicationCard(
         )
 
         Text(
+            text = "Father Name: ${
+                application.father_name ?: "-"
+            }"
+        )
+
+        Text(
             text = "Email: ${application.email ?: "-"}"
         )
 
@@ -217,7 +225,7 @@ private fun PartnerApplicationCard(
                 onClick = onReview,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Review")
+                Text("View / Review")
             }
 
             OutlinedButton(
@@ -261,29 +269,83 @@ private fun ReviewApplicationDialog(
             }
         },
         title = {
-            Text("Review Application")
+            Text("Application Details")
         },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Applicant: ${
-                        application.full_name ?: "-"
-                    }"
-                )
+                Text("Application No: ${
+                    application.application_number ?: "-"
+                }")
 
-                Text(
-                    text = "Application No: ${
-                        application.application_number ?: "-"
-                    }"
-                )
+                Text("Full Name: ${
+                    application.full_name ?: "-"
+                }")
 
-                Text(
-                    text = "Current Status: ${
-                        application.status ?: "pending"
-                    }"
-                )
+                Text("Father Name: ${
+                    application.father_name ?: "-"
+                }")
+
+                Text("Mother Name: ${
+                    application.mother_name ?: "-"
+                }")
+
+                Text("Gender: ${
+                    application.gender ?: "-"
+                }")
+
+                Text("Date of Birth: ${
+                    application.date_of_birth ?: "-"
+                }")
+
+                Text("Email: ${
+                    application.email ?: "-"
+                }")
+
+                Text("Phone: ${
+                    application.phone ?: "-"
+                }")
+
+                Text("Address: ${
+                    application.address ?: "-"
+                }")
+
+                Text("Aadhaar: ${
+                    application.aadhaar_number ?: "-"
+                }")
+
+                Text("PAN: ${
+                    application.pan_number ?: "-"
+                }")
+
+                Text("Education: ${
+                    application.education_details ?: "-"
+                }")
+
+                Text("Profile Photo: ${
+                    application.profile_photo_path ?: "-"
+                }")
+
+                Text("Aadhaar Document: ${
+                    application.aadhaar_document_path ?: "-"
+                }")
+
+                Text("PAN Document: ${
+                    application.pan_document_path ?: "-"
+                }")
+
+                Text("Education Document: ${
+                    application.education_document_path ?: "-"
+                }")
+
+                Text("Other Document: ${
+                    application.other_document_path ?: "-"
+                }")
+
+                Text("Current Status: ${
+                    application.status ?: "pending"
+                }")
 
                 OutlinedTextField(
                     value = adminNotes,
@@ -322,7 +384,8 @@ private fun ReviewApplicationDialog(
                     onClick = {
                         val applicationId =
                             application.id ?: run {
-                                errorMessage = "Application ID nahi mila."
+                                errorMessage =
+                                    "Application ID nahi mila."
                                 return@TextButton
                             }
 
@@ -363,7 +426,8 @@ private fun ReviewApplicationDialog(
                     onClick = {
                         val applicationId =
                             application.id ?: run {
-                                errorMessage = "Application ID nahi mila."
+                                errorMessage =
+                                    "Application ID nahi mila."
                                 return@TextButton
                             }
 
@@ -412,7 +476,7 @@ private fun ReviewApplicationDialog(
                 enabled = !saving,
                 onClick = onDismiss
             ) {
-                Text("Cancel")
+                Text("Close")
             }
         }
     )
