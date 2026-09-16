@@ -67,7 +67,8 @@ fun PartnersScreen(
                     errorMessage = ""
                 }
                 .onFailure {
-                    errorMessage = it.message ?: "Partners load nahi ho paaye."
+                    errorMessage = it.message
+                        ?: "Partners load nahi ho paaye."
                 }
 
             loading = false
@@ -128,38 +129,43 @@ fun PartnersScreen(
             ) {
                 items(
                     items = partners,
-                    key = { it.id ?: it.partner_id ?: it.full_name.orEmpty() }
+                    key = {
+                        it.id
+                            ?: it.partner_id
+                            ?: it.full_name.orEmpty()
+                    }
                 ) { partner ->
                     PartnerCard(
                         partner = partner,
                         onApprove = {
-                            val partnerId = partner.id ?: return@PartnerCard
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
 
                             scope.launch {
-                                PartnerRepository
-                                    .updatePartnerStatus(
-                                        id = partnerId,
-                                        status = "approved"
-                                    )
+                                PartnerRepository.updatePartnerStatus(
+                                    id = partnerId,
+                                    status = "approved"
+                                )
 
                                 loadPartners()
                             }
                         },
                         onReject = {
-                            val partnerId = partner.id ?: return@PartnerCard
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
 
                             scope.launch {
-                                PartnerRepository
-                                    .updatePartnerStatus(
-                                        id = partnerId,
-                                        status = "rejected"
-                                    )
+                                PartnerRepository.updatePartnerStatus(
+                                    id = partnerId,
+                                    status = "rejected"
+                                )
 
                                 loadPartners()
                             }
                         },
                         onDelete = {
-                            val partnerId = partner.id ?: return@PartnerCard
+                            val partnerId =
+                                partner.id ?: return@PartnerCard
 
                             scope.launch {
                                 PartnerRepository.deletePartner(partnerId)
@@ -530,14 +536,16 @@ private fun AddPartnerDialog(
                 enabled = !saving,
                 onClick = {
                     if (partnerId.isBlank() || fullName.isBlank()) {
-                        errorMessage = "Partner ID aur Full Name required hain."
+                        errorMessage =
+                            "Partner ID aur Full Name required hain."
                         return@TextButton
                     }
 
                     val commission = commissionPercent.toDoubleOrNull()
 
                     if (commission == null) {
-                        errorMessage = "Commission percent valid number hona chahiye."
+                        errorMessage =
+                            "Commission percent valid number hona chahiye."
                         return@TextButton
                     }
 
@@ -549,16 +557,26 @@ private fun AddPartnerDialog(
                             PartnerInsert(
                                 partner_id = partnerId.trim(),
                                 full_name = fullName.trim(),
-                                father_name = fatherName.trim().ifBlank { null },
-                                mother_name = motherName.trim().ifBlank { null },
-                                gender = gender.trim().ifBlank { null },
-                                date_of_birth = dateOfBirth.trim().ifBlank { null },
-                                email = email.trim().ifBlank { null },
-                                phone = phone.trim().ifBlank { null },
-                                address = address.trim().ifBlank { null },
-                                aadhaar_number = aadhaarNumber.trim().ifBlank { null },
-                                pan_number = panNumber.trim().ifBlank { null },
-                                education_details = educationDetails.trim().ifBlank { null },
+                                father_name = fatherName.trim()
+                                    .ifBlank { null },
+                                mother_name = motherName.trim()
+                                    .ifBlank { null },
+                                gender = gender.trim()
+                                    .ifBlank { null },
+                                date_of_birth = dateOfBirth.trim()
+                                    .ifBlank { null },
+                                email = email.trim()
+                                    .ifBlank { null },
+                                phone = phone.trim()
+                                    .ifBlank { null },
+                                address = address.trim()
+                                    .ifBlank { null },
+                                aadhaar_number = aadhaarNumber.trim()
+                                    .ifBlank { null },
+                                pan_number = panNumber.trim()
+                                    .ifBlank { null },
+                                education_details = educationDetails.trim()
+                                    .ifBlank { null },
                                 status = "pending",
                                 commission_percent = commission
                             )
