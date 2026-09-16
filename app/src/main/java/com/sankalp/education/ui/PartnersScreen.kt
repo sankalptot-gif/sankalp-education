@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -124,7 +124,9 @@ fun PartnersScreen(
             Text("Abhi koi partner available nahi hai.")
         } else {
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
@@ -236,14 +238,14 @@ private fun PartnerCard(
         ) {
             Button(
                 onClick = onApprove,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(140.dp)
             ) {
                 Text("Approve")
             }
 
             OutlinedButton(
                 onClick = onReject,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.width(140.dp)
             ) {
                 Text("Reject")
             }
