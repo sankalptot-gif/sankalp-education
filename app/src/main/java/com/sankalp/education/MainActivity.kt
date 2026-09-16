@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.data.ProfileRepository
+import com.sankalp.education.ui.AdmissionsScreen
 import com.sankalp.education.ui.CoursesScreen
 import com.sankalp.education.ui.LoginScreen
 import com.sankalp.education.ui.StudentsScreen
@@ -56,18 +57,44 @@ fun SankalpEducationApp() {
         mutableStateOf(AuthRepository.isLoggedIn())
     }
 
+    if (isLoggedIn) {
+        DashboardScreen(
+            onLogout = {
+                isLoggedIn = false
+            }
+        )
+    } else {
+        LoginScreen(
+            onLoginSuccess = {
+                isLoggedIn = true
+            }
+        )
+    }
+}
+
+@Composable
+fun DashboardScreen(
+    onLogout: () -> Unit
+) {
+    var userEmail by remember {
+        mutableStateOf("Loading...")
+    }
+
+    var userRole by remember {
+        mutableStateOf("student")
+    }
+
     var currentScreen by remember {
         mutableStateOf("dashboard")
     }
 
-    if (!isLoggedIn) {
-        LoginScreen(
-            onLoginSuccess = {
-                isLoggedIn = true
-                currentScreen = "dashboard"
-            }
-        )
-        return
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        userEmail = ProfileRepository.getCurrentUserEmail()
+            ?: "Unknown user"
+
+        userRole = ProfileRepository.getCurrentUserRole()
     }
 
     when (currentScreen) {
@@ -87,17 +114,32 @@ fun SankalpEducationApp() {
             )
         }
 
+        "admissions" -> {
+            AdmissionsScreen(
+                onBack = {
+                    currentScreen = "dashboard"
+                }
+            )
+        }
+
         else -> {
-            DashboardScreen(
+            DashboardHome(
+                userEmail = userEmail,
+                userRole = userRole,
                 onOpenCourses = {
                     currentScreen = "courses"
                 },
                 onOpenStudents = {
                     currentScreen = "students"
                 },
+                onOpenAdmissions = {
+                    currentScreen = "admissions"
+                },
                 onLogout = {
-                    isLoggedIn = false
-                    currentScreen = "dashboard"
+                    scope.launch {
+                        ProfileRepository.logout()
+                        onLogout()
+                    }
                 }
             )
         }
@@ -105,31 +147,15 @@ fun SankalpEducationApp() {
 }
 
 @Composable
-fun DashboardScreen(
+fun DashboardHome(
+    userEmail: String,
+    userRole: String,
     onOpenCourses: () -> Unit,
     onOpenStudents: () -> Unit,
+    onOpenAdmissions: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var userEmail by remember {
-        mutableStateOf("Loading...")
-    }
-
-    var userRole by remember {
-        mutableStateOf("student")
-    }
-
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        userEmail = ProfileRepository.getCurrentUserEmail()
-            ?: "Unknown user"
-
-        userRole = ProfileRepository.getCurrentUserRole()
-    }
-
-    val normalizedRole = userRole.lowercase()
-
-    val dashboardTitle = when (normalizedRole) {
+    val dashboardTitle = when (userRole.lowercase()) {
         "admin" -> "Admin Dashboard"
         "partner" -> "Partner Dashboard"
         else -> "Student Dashboard"
@@ -168,86 +194,56 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        when (normalizedRole) {
-            "admin" -> {
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Manage Admissions")
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Manage Partners")
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = onOpenCourses,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Manage Courses")
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = onOpenStudents,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Manage Students")
-                }
+        if (userRole.lowercase() == "admin") {
+            Button(
+                onClick = onOpenAdmissions,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Admissions")
             }
 
-            "partner" -> {
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("New Admission")
-                }
+            Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("My Students")
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("My Commission")
-                }
+            Button(
+                onClick = {
+                    // Partners screen baad mein connect hoga
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Partners")
             }
 
-            else -> {
-                Text(
-                    text = "Your student account is ready."
-                )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onOpenCourses,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Courses")
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onOpenStudents,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Students")
+            }
+        } else if (userRole.lowercase() == "partner") {
+            Text(
+                text = "Partner features jald add hongi."
+            )
+        } else {
+            Text(
+                text = "Student features jald add hongi."
+            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
         OutlinedButton(
-            onClick = {
-                scope.launch {
-                    ProfileRepository.logout()
-                    onLogout()
-                }
-            },
+            onClick = onLogout,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Logout")
