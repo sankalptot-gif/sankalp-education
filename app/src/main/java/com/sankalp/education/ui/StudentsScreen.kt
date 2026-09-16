@@ -10,10 +10,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +45,10 @@ fun StudentsScreen(
 
     var errorMessage by remember {
         mutableStateOf("")
+    }
+
+    var showAddDialog by remember {
+        mutableStateOf(false)
     }
 
     val scope = rememberCoroutineScope()
@@ -92,6 +100,17 @@ fun StudentsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Button(
+            onClick = {
+                showAddDialog = true
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add New Student")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         if (loading) {
             CircularProgressIndicator()
         }
@@ -125,6 +144,18 @@ fun StudentsScreen(
             }
         }
     }
+
+    if (showAddDialog) {
+        AddStudentDialog(
+            onDismiss = {
+                showAddDialog = false
+            },
+            onSaved = {
+                showAddDialog = false
+                loadStudents()
+            }
+        )
+    }
 }
 
 @Composable
@@ -141,21 +172,368 @@ fun StudentItem(
             style = MaterialTheme.typography.titleLarge
         )
 
-        student.email?.let {
-            Text(text = "Email: $it")
+        student.admission_number?.let {
+            Text(text = "Admission No: $it")
+        }
+
+        student.father_name?.let {
+            Text(text = "Father Name: $it")
+        }
+
+        student.mother_name?.let {
+            Text(text = "Mother Name: $it")
+        }
+
+        student.date_of_birth?.let {
+            Text(text = "Date of Birth: $it")
         }
 
         student.phone?.let {
             Text(text = "Phone: $it")
         }
 
-        student.course_id?.let {
-            Text(text = "Course ID: $it")
+        student.email?.let {
+            Text(text = "Email: $it")
         }
 
-        student.created_at?.let {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Created: $it")
+        student.address?.let {
+            Text(text = "Address: $it")
+        }
+
+        student.course?.let {
+            Text(text = "Course: $it")
+        }
+
+        student.batch?.let {
+            Text(text = "Batch: $it")
+        }
+
+        student.admission_date?.let {
+            Text(text = "Admission Date: $it")
+        }
+
+        student.status?.let {
+            Text(text = "Status: $it")
         }
     }
+}
+
+@Composable
+fun AddStudentDialog(
+    onDismiss: () -> Unit,
+    onSaved: () -> Unit
+) {
+    var admissionNumber by remember {
+        mutableStateOf("")
+    }
+
+    var fullName by remember {
+        mutableStateOf("")
+    }
+
+    var fatherName by remember {
+        mutableStateOf("")
+    }
+
+    var motherName by remember {
+        mutableStateOf("")
+    }
+
+    var dateOfBirth by remember {
+        mutableStateOf("")
+    }
+
+    var phone by remember {
+        mutableStateOf("")
+    }
+
+    var email by remember {
+        mutableStateOf("")
+    }
+
+    var address by remember {
+        mutableStateOf("")
+    }
+
+    var course by remember {
+        mutableStateOf("")
+    }
+
+    var batch by remember {
+        mutableStateOf("")
+    }
+
+    var admissionDate by remember {
+        mutableStateOf("")
+    }
+
+    var saving by remember {
+        mutableStateOf(false)
+    }
+
+    var errorMessage by remember {
+        mutableStateOf("")
+    }
+
+    val scope = rememberCoroutineScope()
+
+    AlertDialog(
+        onDismissRequest = {
+            if (!saving) {
+                onDismiss()
+            }
+        },
+        title = {
+            Text("Add New Student")
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    OutlinedTextField(
+                        value = admissionNumber,
+                        onValueChange = {
+                            admissionNumber = it
+                            errorMessage = ""
+                        },
+                        label = {
+                            Text("Admission Number *")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = fullName,
+                        onValueChange = {
+                            fullName = it
+                            errorMessage = ""
+                        },
+                        label = {
+                            Text("Full Name *")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = fatherName,
+                        onValueChange = {
+                            fatherName = it
+                        },
+                        label = {
+                            Text("Father Name")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = motherName,
+                        onValueChange = {
+                            motherName = it
+                        },
+                        label = {
+                            Text("Mother Name")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = dateOfBirth,
+                        onValueChange = {
+                            dateOfBirth = it
+                        },
+                        label = {
+                            Text("Date of Birth (YYYY-MM-DD)")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = {
+                            phone = it
+                        },
+                        label = {
+                            Text("Phone")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                        },
+                        label = {
+                            Text("Email")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = {
+                            address = it
+                        },
+                        label = {
+                            Text("Address")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = course,
+                        onValueChange = {
+                            course = it
+                        },
+                        label = {
+                            Text("Course")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = batch,
+                        onValueChange = {
+                            batch = it
+                        },
+                        label = {
+                            Text("Batch")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = admissionDate,
+                        onValueChange = {
+                            admissionDate = it
+                        },
+                        label = {
+                            Text("Admission Date (YYYY-MM-DD)")
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (errorMessage.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !saving,
+                onClick = {
+                    if (admissionNumber.isBlank()) {
+                        errorMessage = "Admission number required hai."
+                        return@TextButton
+                    }
+
+                    if (fullName.isBlank()) {
+                        errorMessage = "Full name required hai."
+                        return@TextButton
+                    }
+
+                    if (
+                        dateOfBirth.isNotBlank() &&
+                        !dateOfBirth.matches(
+                            Regex("\\d{4}-\\d{2}-\\d{2}")
+                        )
+                    ) {
+                        errorMessage = "Date of Birth YYYY-MM-DD format mein likhein."
+                        return@TextButton
+                    }
+
+                    if (
+                        admissionDate.isNotBlank() &&
+                        !admissionDate.matches(
+                            Regex("\\d{4}-\\d{2}-\\d{2}")
+                        )
+                    ) {
+                        errorMessage = "Admission Date YYYY-MM-DD format mein likhein."
+                        return@TextButton
+                    }
+
+                    saving = true
+                    errorMessage = ""
+
+                    scope.launch {
+                        val result = StudentRepository.addStudent(
+                            admissionNumber = admissionNumber,
+                            fullName = fullName,
+                            fatherName = fatherName,
+                            motherName = motherName,
+                            dateOfBirth = dateOfBirth,
+                            phone = phone,
+                            email = email,
+                            address = address,
+                            course = course,
+                            batch = batch,
+                            admissionDate = admissionDate
+                        )
+
+                        saving = false
+
+                        result
+                            .onSuccess {
+                                onSaved()
+                            }
+                            .onFailure {
+                                errorMessage = it.message
+                                    ?: "Student save nahi ho paaya."
+                            }
+                    }
+                }
+            ) {
+                if (saving) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                enabled = !saving,
+                onClick = onDismiss
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
