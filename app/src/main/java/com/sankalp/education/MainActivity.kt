@@ -6,10 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import com.sankalp.education.ui.AdminAdmissionsScreen
 import com.sankalp.education.ui.AdmissionsScreen
 import com.sankalp.education.ui.CoursesScreen
+import com.sankalp.education.ui.DashboardScreen
 import com.sankalp.education.ui.LoginScreen
 import com.sankalp.education.ui.PartnerApplicationsScreen
 import com.sankalp.education.ui.PartnersScreen
@@ -23,7 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     SankalpApp()
@@ -35,8 +41,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SankalpApp() {
-    var isLoggedIn by remember { mutableStateOf(false) }
-    var currentScreen by remember { mutableStateOf("dashboard") }
+    var isLoggedIn by remember {
+        mutableStateOf(false)
+    }
+
+    var currentScreen by remember {
+        mutableStateOf("dashboard")
+    }
 
     if (!isLoggedIn) {
         LoginScreen(
