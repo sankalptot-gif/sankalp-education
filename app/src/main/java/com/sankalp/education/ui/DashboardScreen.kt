@@ -7,10 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -26,7 +23,6 @@ fun DashboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.Top
     ) {
@@ -45,42 +41,42 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         DashboardButton(
-            title = "Manage Partner Applications",
+            text = "Partner Applications",
             onClick = {
                 onOpenScreen("partner_applications")
             }
         )
 
         DashboardButton(
-            title = "Manage Partners",
+            text = "Partners",
             onClick = {
                 onOpenScreen("partners")
             }
         )
 
         DashboardButton(
-            title = "Manage Admissions",
+            text = "Admin Admissions",
             onClick = {
                 onOpenScreen("admin_admissions")
             }
         )
 
         DashboardButton(
-            title = "View Admissions",
+            text = "Admissions",
             onClick = {
                 onOpenScreen("admissions")
             }
         )
 
         DashboardButton(
-            title = "Manage Courses",
+            text = "Courses",
             onClick = {
                 onOpenScreen("courses")
             }
         )
 
         DashboardButton(
-            title = "Manage Students",
+            text = "Students",
             onClick = {
                 onOpenScreen("students")
             }
@@ -99,21 +95,15 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardButton(
-    title: String,
+    text: String,
     onClick: () -> Unit
 ) {
-    Card(
+    Button(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .padding(vertical = 5.dp)
     ) {
-        Button(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp)
-        ) {
-            Text(text = title)
-        }
+        Text(text = text)
     }
 }
