@@ -27,11 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sankalp.education.data.AuthRepository
 import com.sankalp.education.data.ProfileRepository
-import com.sankalp.education.ui.AdmissionsScreen
-import com.sankalp.education.ui.CoursesScreen
 import com.sankalp.education.ui.LoginScreen
-import com.sankalp.education.ui.PartnersScreen
-import com.sankalp.education.ui.StudentsScreen
+import com.sankalp.education.ui.PartnerApplicationsScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -54,27 +51,49 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SankalpEducationApp() {
-    var isLoggedIn by remember {
+    var loggedIn by remember {
         mutableStateOf(AuthRepository.isLoggedIn())
     }
 
-    if (isLoggedIn) {
-        DashboardScreen(
-            onLogout = {
-                isLoggedIn = false
+    var currentScreen by remember {
+        mutableStateOf("dashboard")
+    }
+
+    if (!loggedIn) {
+        LoginScreen(
+            onLoginSuccess = {
+                loggedIn = true
+                currentScreen = "dashboard"
             }
         )
     } else {
-        LoginScreen(
-            onLoginSuccess = {
-                isLoggedIn = true
+        when (currentScreen) {
+            "partner_applications" -> {
+                PartnerApplicationsScreen(
+                    onBack = {
+                        currentScreen = "dashboard"
+                    }
+                )
             }
-        )
+
+            else -> {
+                DashboardScreen(
+                    onOpenPartnerApplications = {
+                        currentScreen = "partner_applications"
+                    },
+                    onLogout = {
+                        loggedIn = false
+                        currentScreen = "dashboard"
+                    }
+                )
+            }
+        }
     }
 }
 
 @Composable
 fun DashboardScreen(
+    onOpenPartnerApplications: () -> Unit,
     onLogout: () -> Unit
 ) {
     var userEmail by remember {
@@ -83,10 +102,6 @@ fun DashboardScreen(
 
     var userRole by remember {
         mutableStateOf("student")
-    }
-
-    var currentScreen by remember {
-        mutableStateOf("dashboard")
     }
 
     val scope = rememberCoroutineScope()
@@ -98,77 +113,9 @@ fun DashboardScreen(
         userRole = ProfileRepository.getCurrentUserRole()
     }
 
-    when (currentScreen) {
-        "courses" -> {
-            CoursesScreen(
-                onBack = {
-                    currentScreen = "dashboard"
-                }
-            )
-        }
+    val normalizedRole = userRole.lowercase()
 
-        "students" -> {
-            StudentsScreen(
-                onBack = {
-                    currentScreen = "dashboard"
-                }
-            )
-        }
-
-        "admissions" -> {
-            AdmissionsScreen(
-                onBack = {
-                    currentScreen = "dashboard"
-                }
-            )
-        }
-
-        "partners" -> {
-            PartnersScreen(
-                onBack = {
-                    currentScreen = "dashboard"
-                }
-            )
-        }
-
-        else -> {
-            DashboardHome(
-                userEmail = userEmail,
-                userRole = userRole,
-                onOpenCourses = {
-                    currentScreen = "courses"
-                },
-                onOpenStudents = {
-                    currentScreen = "students"
-                },
-                onOpenAdmissions = {
-                    currentScreen = "admissions"
-                },
-                onOpenPartners = {
-                    currentScreen = "partners"
-                },
-                onLogout = {
-                    scope.launch {
-                        ProfileRepository.logout()
-                        onLogout()
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun DashboardHome(
-    userEmail: String,
-    userRole: String,
-    onOpenCourses: () -> Unit,
-    onOpenStudents: () -> Unit,
-    onOpenAdmissions: () -> Unit,
-    onOpenPartners: () -> Unit,
-    onLogout: () -> Unit
-) {
-    val dashboardTitle = when (userRole.lowercase()) {
+    val dashboardTitle = when (normalizedRole) {
         "admin" -> "Admin Dashboard"
         "partner" -> "Partner Dashboard"
         else -> "Student Dashboard"
@@ -207,54 +154,82 @@ fun DashboardHome(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        if (userRole.lowercase() == "admin") {
+        if (normalizedRole == "admin") {
             Button(
-                onClick = onOpenAdmissions,
+                onClick = {
+                    onOpenPartnerApplications()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Manage Partner Applications")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {},
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Manage Admissions")
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = onOpenPartners,
+                onClick = {},
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Manage Partners")
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = onOpenCourses,
+                onClick = {},
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Manage Courses")
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
+        } else if (normalizedRole == "partner") {
             Button(
-                onClick = onOpenStudents,
+                onClick = {},
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Manage Students")
+                Text("New Admission")
             }
-        } else if (userRole.lowercase() == "partner") {
-            Text(
-                text = "Partner features jald add hongi."
-            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("My Students")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("My Commission")
+            }
         } else {
             Text(
-                text = "Student features jald add hongi."
+                text = "Your student account is ready."
             )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
         OutlinedButton(
-            onClick = onLogout,
+            onClick = {
+                scope.launch {
+                    AuthRepository.logout()
+                    onLogout()
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Logout")
